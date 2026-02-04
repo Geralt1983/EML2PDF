@@ -40,6 +40,10 @@ python -m eml2pdf --help
 python -m pytest
 ```
 
+## Decisions
+
+See `docs/decisions.md` for implementation decisions and learnings.
+
 ## Standalone (No Python)
 
 If you want a single-file executable:
