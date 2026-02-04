@@ -52,6 +52,23 @@ def test_convert_html_eml_with_attachment(tmp_path: Path, monkeypatch) -> None:
     assert pdf_path.exists()
 
 
+def test_attachment_name_collision(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("EML2PDF_FORCE_TEXT", "1")
+
+    eml_path = tmp_path / "collision.eml"
+    pdf_path = tmp_path / "out3.pdf"
+    msg = _make_basic_eml("Collision", "Body")
+    msg.add_attachment(b"one", maintype="text", subtype="plain", filename="dup.txt")
+    msg.add_attachment(b"two", maintype="text", subtype="plain", filename="dup.txt")
+    _write_eml(eml_path, msg)
+
+    convert_eml_to_pdf(eml_path, pdf_path, overwrite=True, extract_attachments=True)
+
+    attachments_dir = tmp_path / "attachments" / "collision"
+    assert (attachments_dir / "dup.txt").exists()
+    assert (attachments_dir / "dup-1.txt").exists()
+
+
 def test_batch_convert(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("EML2PDF_FORCE_TEXT", "1")
     input_dir = tmp_path / "eml"

@@ -33,6 +33,7 @@ class Attachment:
     content_type: str
     size: int
     saved_path: Path
+    content_id: str
 
 
 def _read_eml(path: Path) -> EmailMessage:
@@ -116,7 +117,22 @@ def _save_attachments(msg: EmailMessage, attachments_dir: Path) -> list[Attachme
 
         payload = part.get_payload(decode=True) or b""
         saved_path = attachments_dir / safe_name
+        if saved_path.exists():
+            stem = saved_path.stem
+            suffix = saved_path.suffix
+            counter = 1
+            while True:
+                candidate = attachments_dir / f"{stem}-{counter}{suffix}"
+                if not candidate.exists():
+                    saved_path = candidate
+                    safe_name = saved_path.name
+                    break
+                counter += 1
         saved_path.write_bytes(payload)
+
+        content_id = part.get("Content-ID", "")
+        if content_id:
+            content_id = content_id.strip().lstrip("<").rstrip(">")
 
         attachments.append(
             Attachment(
@@ -124,6 +140,7 @@ def _save_attachments(msg: EmailMessage, attachments_dir: Path) -> list[Attachme
                 content_type=content_type,
                 size=len(payload),
                 saved_path=saved_path,
+                content_id=content_id,
             )
         )
         index += 1
@@ -131,10 +148,33 @@ def _save_attachments(msg: EmailMessage, attachments_dir: Path) -> list[Attachme
     return attachments
 
 
+def _replace_cid_references(html_string: str, attachments: list[Attachment]) -> str:
+    cid_map = {
+        att.content_id: att.saved_path.resolve().as_uri()
+        for att in attachments
+        if att.content_id
+    }
+    if not cid_map:
+        return html_string
+
+    soup = BeautifulSoup(html_string, "html.parser")
+    for tag in soup.find_all(["img", "a"]):
+        for attr in ("src", "href"):
+            value = tag.get(attr)
+            if not value or not value.startswith("cid:"):
+                continue
+            cid = value[4:]
+            if cid in cid_map:
+                tag[attr] = cid_map[cid]
+    return str(soup)
+
+
 def _build_email_html(content: EmailContent, attachments: list[Attachment]) -> str:
     body_html = content.body_html
     if not body_html and content.body_text:
         body_html = f"<pre>{html.escape(content.body_text)}</pre>"
+    if body_html:
+        body_html = _replace_cid_references(body_html, attachments)
 
     attachment_html = ""
     if attachments:

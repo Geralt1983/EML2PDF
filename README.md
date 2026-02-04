@@ -19,6 +19,7 @@ eml2pdf ./input-eml ./output-pdf
 - Each EML becomes one PDF.
 - Attachments are saved to `attachments/<email-stem>/` by default.
 - HTML is rendered to PDF when `weasyprint` is available (`pip install -e .[html]`). If not, it falls back to text.
+- On Windows, WeasyPrint may require additional system libraries (GTK/Pango). If install fails, use text fallback or follow WeasyPrint’s Windows docs.
 
 ## CLI
 
