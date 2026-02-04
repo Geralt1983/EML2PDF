@@ -33,6 +33,12 @@ pip install -e .[dev]
 python -m eml2pdf --help
 ```
 
+## Tests
+
+```bash
+python -m pytest
+```
+
 ## Standalone (No Python)
 
 If you want a single-file executable:
@@ -44,3 +50,15 @@ pyinstaller --onefile -n eml2pdf src/eml2pdf/cli.py
 ```
 
 The binary will be in `dist/eml2pdf`.
+
+### Windows Build (PowerShell)
+
+```powershell
+.\scripts\build_windows.ps1
+```
+
+### Windows Tests (PowerShell)
+
+```powershell
+.\scripts\run_tests.ps1
+```
